@@ -1,0 +1,71 @@
+name: Build release artifacts
+
+on:
+  push:
+    tags:
+    - 'v*' 
+
+env:
+  GO_VERSION: '1.20'
+  BINARY_NAME: for-each
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Get version
+      run: echo "VERSION=$(git describe --tags --always --dirty)" >> $GITHUB_ENV
+
+    - name: Setup Go environment
+      uses: actions/setup-go@v4.1.0
+      with:
+        go-version: ${{ env.GO_VERSION }}
+    
+    - name: Build
+      run: make all
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    - name: upload linux artifact
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./build/${{ env.BINARY_NAME }}-${{ env.VERSION }}-linux-amd64.tar.gz
+        asset_name: ${{ env.BINARY_NAME }}-${{ env.VERSION }}-linux-amd64.tar.gz
+        asset_content_type: application/gzip
+        
+    - name: upload darwin artifact
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./build/${{ env.BINARY_NAME }}-${{ env.VERSION }}-darwin-amd64.tar.gz
+        asset_name: ${{ env.BINARY_NAME }}-${{ env.VERSION }}-darwin-amd64.tar.gz
+        asset_content_type: application/gzip
+        
+    - name: upload windows artifact
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./build/${{ env.BINARY_NAME }}-${{ env.VERSION }}-windows-amd64.zip
+        asset_name: ${{ env.BINARY_NAME }}-${{ env.VERSION }}-windows-amd64.zip
+        asset_content_type: application/zip

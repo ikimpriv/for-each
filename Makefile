@@ -4,10 +4,13 @@ PLATFORMS := windows linux darwin
 
 os = $(word 1, $@)
 
-build:
+build: deps
 	go build
 
-all: windows linux darwin
+deps:
+	go mod download
+
+all: deps windows linux darwin
 
 $(PLATFORMS):
 	GOOS=$(os) GOARCH=amd64 go build
@@ -24,4 +27,4 @@ clean:
 	rm -f *.tar.gz
 	rm -f *.zip
 
-.PHONY: clean build all $(PLATFORMS)
+.PHONY: clean build deps all $(PLATFORMS)
